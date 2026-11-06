@@ -32,13 +32,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let tok = Tok(tokenizers::Tokenizer::from_file(tokenizer).map_err(|e| e.to_string())?);
     let data: Value = serde_json::from_str(&std::fs::read_to_string(golden_path)?)?;
     let layout: ElephantLayout = serde_json::from_value(data["layout"].clone())?;
+    let threads = std::env::var("OLLAYA_THREADS")
+        .ok()
+        .map(|s| s.parse::<usize>())
+        .transpose()?;
+    if threads == Some(0) {
+        return Err("OLLAYA_THREADS must be positive".into());
+    }
     let model = if !layout_only {
         let device = if args.get(3).is_some_and(|s| s == "cuda") {
             Device::Cuda(0)
         } else {
             Device::Cpu
         };
-        Some(ElephantModel::load(Path::new(&args[1]), device, None)?)
+        Some(ElephantModel::load(Path::new(&args[1]), device, threads)?)
     } else {
         None
     };
@@ -96,7 +103,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     println!(
         "record: {}",
-        serde_json::json!({"family":"elephant","rows":rows_checked,"model_checked":model.is_some(),"max_logit_error":max_error,"max_probability_error":max_probability_error})
+        serde_json::json!({"family":"elephant","rows":rows_checked,"model_checked":model.is_some(),"threads":threads,"max_logit_error":max_error,"max_probability_error":max_probability_error})
     );
     assert!(
         max_error <= 1e-3,

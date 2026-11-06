@@ -95,6 +95,7 @@ differs from the author's sequential raw logits by more than `1e-3`.
 From the repository root, with the local compatible dynamic ORT environment:
 
 ```sh
+export OLLAYA_THREADS=8
 cargo run -p ollaya-runner --features cuda-dynamic --example parity_elephant -- \
   convert/out/elephant-1-wl convert/out/goldens-elephant-1.json cpu
 CUDA_VISIBLE_DEVICES=4 cargo run -p ollaya-runner --features cuda-dynamic --example parity_elephant -- \
