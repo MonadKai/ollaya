@@ -74,7 +74,8 @@ OneJev archive from
 `https://codeload.github.com/OmniJev/OneJev/tar.gz/81ce62f1597c91e46767d4d02d6ac2e18534fe94`,
 extract it in a build directory, and apply the fixed model snapshot's
 `serve.patch` using `git apply`. Set `ELEPHANT_ONEJEV` to that directory.
-The reference wrapper verifies hashes of the patched engine, prompt and readout.
+The reference wrapper verifies hashes of the patched engine and its imported
+OneJev source modules, and rejects a previously imported `qev` from another tree.
 
 The author's Transformers pin is 5.19.0; the rest of Ollaya's conversion stack
 stays on 5.17. Keep the author version in a separate build-time target and put
@@ -89,7 +90,9 @@ MODEL=/absolute/path/to/fixed/huggingface/snapshot
 .venv/bin/python -m ollaya_convert.families.elephant.goldens --model "$MODEL" --out out/goldens-elephant-1.json
 ```
 
-The export checks the complete weight SHA-256 before loading. The reference
+Reference loading checks the complete weight SHA-256 and the pinned config,
+tokenizer, chat template and readout files before loading. Unexpected calibration,
+readout-head or adapter overrides are rejected. The reference
 then compares **every loaded text parameter** with the source checkpoint to
 detect missing-key/random-initialization failures when loading a multimodal
 checkpoint into a text-only class. It requires noncausal attention, slot-LM
@@ -132,6 +135,8 @@ exactly. Inputs include structured/Unicode/control-token state, multiple
 questions, 1/26/27/255 choices and exact 512/2048/4096-token prompts. The
 unchanged gate is logits `1e-3`, probabilities `1e-4`, identical decisions.
 CPU uses eight threads; CUDA uses physical GPU 4 (logical `cuda:0`, RTX 5090).
+The same 12 rows passed again after the three review rounds; the gate now uses
+the loaded model's actual layout instead of the fixture's layout.
 
 The private registry pull, `/api/show`, `/api/decide`, `/v1/systemone`, `/api/ps`
 and CLI all pass with the actual packaged graph and original weights.
@@ -148,7 +153,10 @@ The native runner's loaded library map contains no Python, Torch or
 and its dependencies. No global runtime installation was changed.
 The model was unloaded and test listeners stopped after verification.
 
-Machine-readable receipts: [development validation](../validation/elephant-1-y108p62.json).
+Machine-readable receipts: [initial development validation](../validation/elephant-1-y108p62.json)
+and [three-round review](../validation/elephant-1-review-20261106.json).
+The [review report](../validation/elephant-1-review-20261106.md) records the fixes,
+negative controls, fresh validation and deployment-skill assessment.
 The original full goldens and logs remain at
 `/opt/kai.liu/var/ollaya-elephant` and `convert/out/` on this host.
 
@@ -187,7 +195,11 @@ origin. The manifest names the author's pinned weight/tokenizer URLs; the
 registry contains only graph/configuration artifacts. On this host the verified
 HF blob was hardlinked into the private store to avoid downloading it twice.
 Use `daemon_smoke --goldens ... --out ...` after the raw-logit gates to repeat
-the public API checks. Private packaging deliberately does not modify the
+the public API checks. Both HTTP checkers reject empty/misaligned/non-finite
+goldens before starting work and write PASS only after successful cleanup.
+The private tag requires FP32 computation; an experimental `--fp16` export
+cannot be packaged as `elephant:1-text` and needs its own tag and qualification.
+Private packaging deliberately does not modify the
 public catalog, website, release tags or upstream repository.
 
 ## Earlier structural checks
@@ -209,7 +221,8 @@ public catalog, website, release tags or upstream repository.
   maximum raw-logit error `8.9406967e-8`. The full-weight golden generator
   includes these three boundary inputs automatically.
 - Full Rust workspace tests pass with `cuda-dynamic`; Clippy passes with
-  `-D warnings`; all 38 Python conversion tests pass.
+  `-D warnings`; all 45 Python conversion tests pass, including seven
+  reference identity, packaging and HTTP-gate regression tests.
 - Public quality/speed benchmarks, other hardware/OS validation, image
   reference parity and prompts above 4096 remain future work. Shared-prefix
   caching is a performance follow-up behind the same Engine interface.

@@ -1,0 +1,232 @@
+{
+  "scope": "three-round fork development review; no public release qualification",
+  "utc": "2026-11-06T11:37:59.456628+00:00",
+  "base_commit": "9b8698e39f11a0f0bcd08ad686de51cd1b4f6fa8",
+  "initial_delivery_commit": "d32dba45f7317ca03185d95350b6044519506913",
+  "reviewed_code_commit": "66eae06aabc63c2f428994adfd5aa7d9ecd858b4",
+  "runtime_engine_source_commit": "36b202041e81d2d12d942668f545d5118a11410d",
+  "rounds": [
+    {
+      "round": 1,
+      "standards_findings": 2,
+      "spec_findings": 3,
+      "unique_findings": 3,
+      "fixed_in": "f0807a4861e5390350999ed6a7374f52a65ed26e"
+    },
+    {
+      "round": 2,
+      "standards_findings": 0,
+      "spec_findings": 1,
+      "unique_findings": 1,
+      "fixed_in": "66eae06aabc63c2f428994adfd5aa7d9ecd858b4"
+    },
+    {
+      "round": 3,
+      "standards_findings": 0,
+      "spec_findings": 0,
+      "unresolved_material_findings": 0
+    }
+  ],
+  "checks": {
+    "cargo_fmt_all_check": "passed",
+    "cargo_clippy_workspace_all_targets_locked_cuda_dynamic_D_warnings": "passed",
+    "cargo_test_workspace_locked_cuda_dynamic": "passed",
+    "python_conversion_unittest": {
+      "passed": true,
+      "tests": 45
+    },
+    "new_tool_regressions": 7
+  },
+  "negative_controls": {
+    "round1-valid-tiny": {
+      "exit_code": 0,
+      "passed": true
+    },
+    "round1-broken-template": {
+      "exit_code": 101,
+      "passed": true
+    },
+    "round1-broken-limit": {
+      "exit_code": 1,
+      "passed": true
+    },
+    "round1-empty-goldens": {
+      "exit_code": 1,
+      "passed": true
+    },
+    "round1-invalid-device": {
+      "exit_code": 1,
+      "passed": true
+    }
+  },
+  "reference": {
+    "snapshot_and_reference_identity_verified": true,
+    "loaded_text_parameters_compared": 427,
+    "cached_golden_max_logit_error": 0.0,
+    "passed": true
+  },
+  "semantic_files": {
+    "revision": "b3f8a93462fb1051a9de031e94a7ff380e254072",
+    "sha256": {
+      "chat_template.jinja": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715",
+      "config.json": "f26324589d15932e2742dbb13dbc7c561865ce4f80990af3b7dff05efe4dadab",
+      "generation_config.json": "290866a6d7d4a4442fe83ba2434a31517446f40a01de500ff97b4354e7e5d082",
+      "readout.json": "96ea8a5c6ecfc30c20cdd369762db5997c5f4fb9821ce0a0318941343eb5e8ba",
+      "serve.patch": "f234c125f1d38d82104b9e1f24e75bde51e4401928acfba2fbf5c59ef2fb46b8",
+      "tokenizer.json": "a5cd9732badce41de57e6efce8302930ded1c1188c5f81feb2bd6c24c4a1941f",
+      "tokenizer_config.json": "2984c03425a28d242744e234a5003786fd289b3713db79fe0958c65eb59d85b2"
+    },
+    "source": "https://huggingface.co/api/models/baselabs/elephant-1/tree/b3f8a93462fb1051a9de031e94a7ff380e254072?recursive=true"
+  },
+  "reference_sources": {
+    "commit": "81ce62f1597c91e46767d4d02d6ac2e18534fe94",
+    "sha256": {
+      "__init__.py": "6446cd0006940630b28180d275efe39972b871c2fb2ae502c848607c940e8376",
+      "client.py": "560ca00f7ecffee72e6490afdd69a34cf4f55a6e1765a0493d4beebf8b6b4278",
+      "answers.py": "09b06dba258c80a6a9afdaa5aacfd0f7523f9d2a087a7b6402ca03553ea6fba6",
+      "calibrate.py": "3fa6013a81c7e79a702afcdcc0ebd089bee7047590c18cc44708850f5aeda1ee",
+      "schema.py": "bce4b7d353ac115a9e50aef284975ddeed9a3bb452e3fd928a556668705bc2f3"
+    }
+  },
+  "graph_sha256": "caa65023244b52ebe63fe60d7ea1466d29de0931643dd5798290345ab68da6eb",
+  "goldens_sha256": "0a74622eee78c5db3414f82e4e322a27ab2bacd552b2579451147811b0ed8289",
+  "goldens_regenerated": false,
+  "goldens_removed": false,
+  "private_manifest_sha256": "8c8b1aab5340b812d8f099a827833eb0a5a30823a4d990da6ce14945b9a17e35",
+  "parity": {
+    "cpu": {
+      "family": "elephant",
+      "rows": 12,
+      "model_checked": true,
+      "threads": 8,
+      "max_logit_error": 1.1920928955078125e-05,
+      "max_probability_error": 5.263880499123408e-07
+    },
+    "cuda": {
+      "family": "elephant",
+      "rows": 12,
+      "model_checked": true,
+      "threads": 8,
+      "max_logit_error": 1.52587890625e-05,
+      "max_probability_error": 1.1922098309691265e-06
+    }
+  },
+  "runner_http": {
+    "reference": "author Elephant-1",
+    "device": "cuda:0",
+    "rows": 12,
+    "max_logit_error": 1.52587890625e-05,
+    "rejections": 4,
+    "passed": true
+  },
+  "daemon": {
+    "model": "elephant:1-text",
+    "golden_rows": 12,
+    "wire_rows_checked": 13,
+    "max_wire_rounding_error": 4.967115313020236e-05,
+    "rejections": [
+      422,
+      422,
+      422,
+      422
+    ],
+    "author_only_schema_rejections": 1,
+    "passed": true
+  },
+  "closeout": {
+    "utc": "2026-11-06T11:35:06.083549+00:00",
+    "ports_listening": {
+      "11439": false,
+      "18899": false
+    },
+    "gpu": "0, GPU-35c55aa2-4f4a-9c69-a7cb-0ed28986b629, 17215 MiB, 0 %\n1, GPU-872b89ba-910c-6098-f62c-a7dfffbb34cd, 17213 MiB, 0 %\n2, GPU-dacb0d2d-9762-7c40-64c3-a2f4a70b6484, 16479 MiB, 0 %\n3, GPU-d1fb2ac4-d99c-4705-0ed1-103f346c6946, 9305 MiB, 0 %\n4, GPU-4fe15f9b-c584-7dd0-a8e6-ec482756c07a, 2 MiB, 0 %\n5, GPU-15159acd-8c05-462e-eb0e-0a2f18423123, 2 MiB, 0 %\n6, GPU-23f48506-0435-d2b0-eeaf-ef16ca3f0c0e, 2 MiB, 0 %\n7, GPU-df6eb56b-8783-66df-a6a6-1d8a58538c29, 2 MiB, 0 %\n",
+    "task_daemon_stopped": true
+  },
+  "deployment_skills": {
+    "checkout_commit": "2e4caaa",
+    "modified": false,
+    "decision": "no consumer capability update until versioned image and matching producer verifier are published"
+  },
+  "gate": {
+    "max_logit_error": 0.001,
+    "max_probability_error": 0.0001,
+    "identical_decisions": true,
+    "identical_token_ids_and_prefix_boundaries": true
+  },
+  "limits": {
+    "prompt_tokens": 4096,
+    "request_tokens_shared_prefix_once": 16384,
+    "images": false
+  },
+  "logs": {
+    "round1-rust-tests.log": {
+      "path": "/opt/kai.liu/var/ollaya-elephant/review-20261106/round1-rust-tests.log",
+      "sha256": "83cceb5fd4912f933131e925b5b8c005ec28a28b43b2ff08ff00b49a697a7fdb"
+    },
+    "round1-full-parity-cpu.log": {
+      "path": "/opt/kai.liu/var/ollaya-elephant/review-20261106/round1-full-parity-cpu.log",
+      "sha256": "1fd0f075fb48ec372b60eeea80c70c87d09e083f2a57bdcb8d65badb274ac7df"
+    },
+    "round1-full-parity-cuda.log": {
+      "path": "/opt/kai.liu/var/ollaya-elephant/review-20261106/round1-full-parity-cuda.log",
+      "sha256": "21f4c9931ec9321e8f822f77dabc5275926b9c9a8da162c319082062594053f5"
+    },
+    "round1-valid-tiny.log": {
+      "path": "/opt/kai.liu/var/ollaya-elephant/review-20261106/round1-valid-tiny.log",
+      "sha256": "ffc21991113d3a0ad6a685f1d72dacd28b60339a8cf54519d21775dac3ac46ab"
+    },
+    "round1-broken-template.log": {
+      "path": "/opt/kai.liu/var/ollaya-elephant/review-20261106/round1-broken-template.log",
+      "sha256": "aa81040dff93915c5f2375d9464e59f69b012b43c67efad5f4ad8bfee4724b01"
+    },
+    "round1-broken-limit.log": {
+      "path": "/opt/kai.liu/var/ollaya-elephant/review-20261106/round1-broken-limit.log",
+      "sha256": "958edcce393431b3a72e5709233f9ac882c7c52c3fd8acea3eb967f7ed7d8dcb"
+    },
+    "round1-empty-goldens.log": {
+      "path": "/opt/kai.liu/var/ollaya-elephant/review-20261106/round1-empty-goldens.log",
+      "sha256": "c04dd0e9df42556d8fc0134cf9d818115fb3db31848472dbde4128b0bcfb9d42"
+    },
+    "round1-invalid-device.log": {
+      "path": "/opt/kai.liu/var/ollaya-elephant/review-20261106/round1-invalid-device.log",
+      "sha256": "efad9c91d781d59fd23e42b338d181593032afd35d427833ea34e3cbb0654130"
+    },
+    "round2-runner-http.log": {
+      "path": "/opt/kai.liu/var/ollaya-elephant/review-20261106/round2-runner-http.log",
+      "sha256": "39b8113ed1b4bd07cae811583aff8bb4e893b1f0fe3a169db23e77af4cdcfbf1"
+    },
+    "round2-daemon-http.log": {
+      "path": "/opt/kai.liu/var/ollaya-elephant/review-20261106/round2-daemon-http.log",
+      "sha256": "f39f914a15d97ddc788f25edbe3d9b9e627f788347d8f9646aa7a37d5ded5204"
+    },
+    "round2-daemon-server.log": {
+      "path": "/opt/kai.liu/var/ollaya-elephant/review-20261106/round2-daemon-server.log",
+      "sha256": "a3af6dfd3b7fe140ee88b6f83e247d06fd38f03915e2689fc30f975c6aa6ad2f"
+    }
+  },
+  "tested_code_sha256": {
+    "convert/ollaya_convert/families/elephant/__init__.py": "2bd00ecf651309ef9b2db5183dfe89e46ff1a361f4bf567b07e632eb40f54186",
+    "convert/ollaya_convert/families/elephant/checks.py": "325856a7dc4ee8d6bef55518f41d7a67eef7af52718555954bace946c6adb4bb",
+    "convert/ollaya_convert/families/elephant/daemon_smoke.py": "d2405b3f7c9686966594d2886ffd559eab92998460d4dce4cf5d16ec8a5c2983",
+    "convert/ollaya_convert/families/elephant/export.py": "1edf80535f1bf2edc3f77a833f042d55d613ed3b8403b30d2696f9afe5153d8a",
+    "convert/ollaya_convert/families/elephant/goldens.py": "0af3dff52132afb25f72010435d5071917e8a29ef8348fd1e3ba4788642ef08f",
+    "convert/ollaya_convert/families/elephant/graphs.py": "bd8931c46c82cf80572017a4e22d361448344ab6f51f8ef7ea7298b94e321d3a",
+    "convert/ollaya_convert/families/elephant/http_smoke.py": "a2857ff8d5ca16692964e92a7b590b1ad7907dab05d3c61827b7f8a93a348c88",
+    "convert/ollaya_convert/families/elephant/layout.py": "eaeab6669a68f4e461e2d0a40dda78eda0643ae125caafb77231d038db36fc96",
+    "convert/ollaya_convert/families/elephant/package_local.py": "44e8f7e150fec5b160f8b4459d0e50fc009613655c11a65829e3d3c483b0794e",
+    "convert/ollaya_convert/families/elephant/ref.py": "b971665b02e06b04e81a5156d50f576535285e6a8afaa35db6e80b9101507816",
+    "convert/ollaya_convert/families/elephant/reference_smoke.py": "5d5c1c24dc2a3be74bb244750d5efe3ebd942d6089fcc411fc8ea1e0a5b80a80",
+    "convert/ollaya_convert/families/elephant/smoke.py": "28dff095d6f1914aa9bc755dc7a99f3afb7c4a577271948f14ca61308b707c19",
+    "convert/ollaya_convert/parity_run.py": "5d1b8cee32ea1c4e01b26acabd5b873f24ba4832c4c95a883ddf82f4a0e5b08c",
+    "convert/pyproject.toml": "9e4286469b50e012b2730eaec5adfbf0154b9fcb39bf59517c1ae06ae2f2ddb5",
+    "convert/tests/test_elephant.py": "a424819eddf01ac84fcff75349bb617f262740bd21cc74634b64b74d25b19c3b",
+    "convert/tests/test_elephant_tools.py": "ca2a2dfc1d81d37baca5e21824e07e8795f59d79f988b0e8caa31dbc0177c3d4",
+    "convert/uv.lock": "6cbca2b208a8e5f5e2f82c3c06bfd6334f008deb626fa6782e026dd7851d3cca",
+    "crates/ollaya-decision/src/elephant.rs": "ff42ed6002be9c0bf5bf688ec313e7442739f8c3817211268e4a1406c8b9a076",
+    "crates/ollaya-decision/src/lib.rs": "222fac2722b5d0ed64c481c87ba8d007c7b04720e58cf6c36d7ab9d0a0ae3d46",
+    "crates/ollaya-runner/examples/parity_elephant.rs": "83c0eae3db462796487688f95359e786a1159afdff39652f6d9106b9f3af4a33",
+    "crates/ollaya-runner/src/elephant.rs": "45f98af907c22ab0fb2473b89abaf08586210eec40f5fe3a0a5dce4eaab495ef",
+    "crates/ollaya-runner/src/engine.rs": "98c8b3ad520215dad438b5f249e71f7c2bf07f8514eeb2631fbdcb47cc7cb282",
+    "crates/ollaya-runner/src/lib.rs": "eaea277b3a2340d1ade62054ae3add6646bd854284209066e962ac950aeb2f5f"
+  }
+}
