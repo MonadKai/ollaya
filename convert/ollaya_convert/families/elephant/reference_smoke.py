@@ -15,7 +15,7 @@ from .graphs import ElephantGraph
 from .layout import SLOTS
 
 
-def check(snapshot):
+def check(snapshot, requests_path=None):
     torch.set_num_threads(4);torch.manual_seed(42)
     cls,_,_=ref.upstream()
     from qev import readout
@@ -34,7 +34,8 @@ def check(snapshot):
     e.readout=readout.Readout.attach(e.model,readout.ReadoutConfig.load(snapshot),slot_ids=e.slot_ids)
     graph=ElephantGraph(e.model.model,e.model.lm_head,e.slot_ids).eval()
     maximum=0.0;count=0
-    for state,questions in cases():
+    requests=cases() if requests_path is None else [(c["state"],c["questions"]) for c in json.loads(Path(requests_path).read_text())["cases"]]
+    for state,questions in requests:
         want=ref.forward(e,state,questions)
         _,prefix,suffixes=ref.prepare(e,state,questions)
         for values,suffix in zip(want,suffixes):
@@ -49,4 +50,5 @@ def check(snapshot):
 
 if __name__=="__main__":
     ap=argparse.ArgumentParser(description=__doc__);ap.add_argument("--model",required=True)
-    check(ap.parse_args().model)
+    ap.add_argument("--cases",help="additional author-layout fixture, e.g. exact token-boundary cases")
+    a=ap.parse_args();check(a.model,a.cases)

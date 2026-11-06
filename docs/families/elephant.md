@@ -119,7 +119,9 @@ installation. No Python package is used by the runtime.
   prefix-marker collision).
 - On Transformers 5.19, the pinned author's actual noncausal mask installer
   and sequential cache-fork code agree with the complete-sequence graph on
-  all 9 random-model rows: maximum raw-logit error `8.9406967e-8`.
+  all 12 random-model rows, including exact 512/2048/4096-token inputs:
+  maximum raw-logit error `8.9406967e-8`. The full-weight golden generator
+  includes these three boundary inputs automatically.
 - Full Rust workspace tests pass with `cuda-dynamic`; Clippy passes with
   `-D warnings`; all 38 Python conversion tests pass.
 - Full Elephant-1 weight loading, export, CPU/CUDA parity, long-input memory,
