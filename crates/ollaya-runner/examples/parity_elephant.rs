@@ -20,10 +20,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if args.len() < 3 {
         return Err("usage: parity_elephant MODEL_DIR GOLDENS [cpu|cuda], or --layout-only TOKENIZER GOLDENS".into());
     }
-    let layout_only=args[1]=="--layout-only";
-    let tokenizer=if layout_only { std::path::PathBuf::from(args.get(2).ok_or("missing tokenizer")?) }
-        else { Path::new(&args[1]).join("tokenizer.json") };
-    let golden_path=args.get(if layout_only { 3 } else { 2 }).ok_or("missing goldens")?;
+    let layout_only = args[1] == "--layout-only";
+    let tokenizer = if layout_only {
+        std::path::PathBuf::from(args.get(2).ok_or("missing tokenizer")?)
+    } else {
+        Path::new(&args[1]).join("tokenizer.json")
+    };
+    let golden_path = args
+        .get(if layout_only { 3 } else { 2 })
+        .ok_or("missing goldens")?;
     let tok = Tok(tokenizers::Tokenizer::from_file(tokenizer).map_err(|e| e.to_string())?);
     let data: Value = serde_json::from_str(&std::fs::read_to_string(golden_path)?)?;
     let layout: ElephantLayout = serde_json::from_value(data["layout"].clone())?;
