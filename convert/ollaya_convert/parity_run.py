@@ -81,7 +81,8 @@ def command(family, d, device, cuda_dynamic=None):
         cmd += ["--features", "cuda-dynamic", "--target-dir", os.path.join("target", "cuda-dynamic")]
     elif device == "cuda":
         cmd += ["--features", "cuda"]
-    cmd += ["--", d, os.path.join(OUT, "goldens-%s.jsonl" % base), device] + (["--fp16"] if fp16 else [])
+    golden = "goldens-elephant-1.json" if family == "elephant" else "goldens-%s.jsonl" % base
+    cmd += ["--", d, os.path.join(OUT, golden), device] + (["--fp16"] if fp16 else [])
     return cmd, "fp16" if fp16 else "fp32"
 
 

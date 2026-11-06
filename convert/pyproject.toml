@@ -23,6 +23,10 @@ dependencies = [
 [tool.uv]
 package = false
 
+[project.optional-dependencies]
+# Schema validation in the pinned OneJev reference; build-time only.
+elephant = ["pydantic==2.14.1"]
+
 # CUDA 13 wheels on Linux and Windows. PyTorch publishes no CUDA build for macOS, so there
 # torch comes from PyPI (Apple silicon wheels, CPU and MPS); exports and parity run on the CPU.
 [tool.uv.sources]

@@ -120,6 +120,7 @@ pub const LAYOUTS: &[&str] = &[
     "clm-v1",
     "decider-vision-v1",
     "nimble-codes-v1",
+    "elephant-1-v1",
     "jeeves-markers-v1",
     "clef-joint-v1",
     "decima-late-interaction-v1",
@@ -180,6 +181,9 @@ pub fn load(
         "decider-vision-v1" => Ok(Box::new(
             crate::decider_vision::VisionDeciderModel::load_files(files, device, threads)?,
         )),
+        "elephant-1-v1" => Ok(Box::new(crate::elephant::ElephantModel::load_files(
+            files, device, threads,
+        )?)),
         "nimble-codes-v1" => Ok(Box::new(crate::nimble::NimbleModel::load_files(
             files, device, threads,
         )?)),
