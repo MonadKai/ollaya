@@ -2,8 +2,9 @@
 
 Base Labs' [Elephant-1](https://huggingface.co/baselabs/elephant-1) is a Qwen3.5-9B
 decision model. This fork adds the **text-only** `elephant-1-v1` ONNX layout.
-Full-weight parity is pending the pinned checkpoint download; it is not yet a
-validated catalog tag. The implementation lives on `feat/elephant-1`.
+Full-weight CPU/CUDA parity and native daemon integration pass on y108p62.
+The implementation lives on `feat/elephant-1`, with a private `elephant:1-text`
+development tag. It has not been published to the public catalog or released.
 
 The model and reference are pinned to HF revision
 `b3f8a93462fb1051a9de031e94a7ff380e254072` and OneJev
@@ -35,9 +36,12 @@ they were a numerical error, or change other families' wire behavior.
 
 The layout accepts 1–255 named choices and 1–10 score levels, structured state,
 and the author's structured instructions/criteria entries. Ollaya's public API
-still applies its shared request validation and missing-instruction defaults;
-use explicit instructions when comparing HTTP results with OneJev. The direct
-runner also supports the author's omitted-instruction defaults.
+still applies its shared request validation and missing-instruction defaults:
+public choices require at least two options and public score descriptions
+cannot be null. Use explicit instructions when comparing HTTP results with
+OneJev. A null score description can be replaced by an empty string with an
+identical rendered prompt. The direct runner supports the author's single
+option, null descriptions and omitted-instruction defaults.
 
 | Tensor | Type | Shape |
 | --- | --- | --- |
@@ -47,8 +51,8 @@ runner also supports the author's omitted-instruction defaults.
 | `cand_logits` | float32 | `[rows, 256]`, author slot order |
 
 The Rust runner processes one row per ORT call to bound memory. Its decision
-configuration supplies the prompt limit (export defaults to 4096, pending
-full-weight resource validation); it refuses longer inputs and images. The
+configuration supplies the prompt limit (4096, validated with real weights
+on CPU and CUDA); it refuses longer inputs and images. The
 training limit of 16384 is an upper bound, not a verified runtime promise.
 The total request budget counts the prefix once plus all question suffixes
 and is capped at 16384 tokens.
@@ -105,7 +109,88 @@ CUDA_VISIBLE_DEVICES=4 cargo run -p ollaya-runner --features cuda-dynamic --exam
 `ORT_DYLIB_PATH` and the CUDA library path must name a compatible local ORT GPU
 installation. No Python package is used by the runtime.
 
-## Evidence so far (y108p62, 2026-11-06)
+## Full-weight evidence (y108p62, 2026-11-06)
+
+The verified original weight file is 18,819,722,392 bytes, SHA-256
+`682f02348dfe4617dd21bba2915c12e805de8cf16327a61e895a831ea681d0ba`.
+All 427 loaded text parameters match the checkpoint exactly in their loaded
+dtype; the 333 vision tensors are deliberately unused. The weightless graph
+is 12,530,518 bytes and references original BF16 bytes with FP32 computation.
+Only mask, rotary and slot/configuration constants are inline, not learned
+weights. These are development correctness results, not quality or speed
+benchmarks and not a public K2/K3 release qualification.
+
+| Gate | Cases | Maximum raw-logit error | Maximum probability error |
+| --- | --- | --- | --- |
+| Eager graph vs author sequential cache-fork | export sample | `4.7683716e-6` | — |
+| Rust/ORT CPU | 9 requests / 12 rows | `1.1920929e-5` | `5.2638805e-7` |
+| Rust/ORT CUDA | same 12 rows | `1.5258789e-5` | `1.1922098e-6` |
+| Isolated runner HTTP CUDA | same 12 rows | `1.5258789e-5` | — |
+
+Every decision matches. Token IDs, prefix boundaries and option counts match
+exactly. Inputs include structured/Unicode/control-token state, multiple
+questions, 1/26/27/255 choices and exact 512/2048/4096-token prompts. The
+unchanged gate is logits `1e-3`, probabilities `1e-4`, identical decisions.
+CPU uses eight threads; CUDA uses physical GPU 4 (logical `cuda:0`, RTX 5090).
+
+The private registry pull, `/api/show`, `/api/decide`, `/v1/systemone`, `/api/ps`
+and CLI all pass with the actual packaged graph and original weights.
+Public HTTP checks cover 11 schema-compatible golden rows plus two repeated
+rows through `/v1/systemone`; the author-only schema case is explicitly
+rejected, and its compatible score/noul subset keeps identical prompts.
+Maximum wire error is `4.9671153e-5`, consistent with four-decimal rounding.
+Images, empty score criteria, overlong text and prefix-marker collisions
+return 422. The isolated runner returns 400 for those same cases.
+
+After the private registry was stopped, cached inference still passed.
+The native runner's loaded library map contains no Python, Torch or
+`convert/` paths. A private native library prefix holds ORT 1.28.2 CUDA13
+and its dependencies. No global runtime installation was changed.
+The model was unloaded and test listeners stopped after verification.
+
+Machine-readable receipts: [development validation](../validation/elephant-1-y108p62.json).
+The original full goldens and logs remain at
+`/opt/kai.liu/var/ollaya-elephant` and `convert/out/` on this host.
+
+## Local development tag
+
+On the prepared host, start the isolated daemon in one terminal:
+
+```sh
+/opt/kai.liu/var/ollaya-elephant/ollaya serve
+```
+
+In another terminal:
+
+```sh
+/opt/kai.liu/var/ollaya-elephant/ollaya run elephant:1-text \
+  'The customer was charged twice and requests a refund.' \
+  --ask 'Does the customer want a refund?' --format json --keepalive 0
+```
+
+The wrapper uses localhost port 11439, a private model store, physical GPU 4
+and eight CPU threads. It defaults to unloading after each request. Override
+`ELEPHANT_GPU` only after checking that the chosen GPU is available.
+Stop this daemon with the same wrapper's `stop` command. The cached tag needs
+no registry server, Python environment or further weight download.
+
+To create a fresh private registry after exporting and passing parity:
+
+```sh
+PYTHONPATH=convert convert/.venv/bin/python -m ollaya_convert.families.elephant.package_local \
+  --model convert/out/elephant-1-wl --registry /path/to/private-registry \
+  --origin http://127.0.0.1:18899
+```
+
+Serve that directory locally while pulling with `OLLAYA_REGISTRY` set to its
+origin. The manifest names the author's pinned weight/tokenizer URLs; the
+registry contains only graph/configuration artifacts. On this host the verified
+HF blob was hardlinked into the private store to avoid downloading it twice.
+Use `daemon_smoke --goldens ... --out ...` after the raw-logit gates to repeat
+the public API checks. Private packaging deliberately does not modify the
+public catalog, website, release tags or upstream repository.
+
+## Earlier structural checks
 
 - Author layout: 6 requests / 9 rows, including Unicode, structured state,
   control tokens and 26/27/255 options; Python and Rust token sequences,
@@ -125,10 +210,12 @@ installation. No Python package is used by the runtime.
   includes these three boundary inputs automatically.
 - Full Rust workspace tests pass with `cuda-dynamic`; Clippy passes with
   `-D warnings`; all 38 Python conversion tests pass.
-- Full Elephant-1 weight loading, export, CPU/CUDA parity, long-input memory,
-  HTTP integration and quality measurements are still required.
+- Public quality/speed benchmarks, other hardware/OS validation, image
+  reference parity and prompts above 4096 remain future work. Shared-prefix
+  caching is a performance follow-up behind the same Engine interface.
 
 See [model contract](../elephant-1-model-contract.md) and
 [design research](../elephant-1-feasibility.md) for the public image-reference
-gap and the cache/long-context follow-up. Catalog publication is gated on
-full-weight results; the synthetic artifact never becomes a catalog model.
+gap and the cache/long-context follow-up. Public catalog publication still
+requires the repository's release/quality gates; the synthetic artifact never
+becomes a catalog model.

@@ -6,7 +6,9 @@
 指定的 OneJev `81ce62f1597c91e46767d4d02d6ac2e18534fe94` +
 [`serve.patch`](https://huggingface.co/baselabs/elephant-1/blob/b3f8a93462fb1051a9de031e94a7ff380e254072/serve.patch)。
 以下是移植 Ollaya 时必须保持的模型行为，而不是通用 Qwen3.5 聊天推理约定。
-本次没有运行完整模型；本机 18.82 GB 权重仍在下载，权重头部观察须待完整 SHA-256 回执后才成为可用资产的证据。
+后续实测已完成完整权重校验、427 个文本参数逐项加载检查和 12 行 CPU/CUDA
+parity；最新结果见[家族文档](families/elephant.md)。下文保留公开代码推导的
+参考运行时陷阱与验证要求；图像能力仍未验收。
 
 ## 固定检查点的事实
 
@@ -15,7 +17,7 @@
 | 架构 | [`config.json`](https://huggingface.co/baselabs/elephant-1/blob/b3f8a93462fb1051a9de031e94a7ff380e254072/config.json) 为 `Qwen3_5ForConditionalGeneration`，`qwen3_5`，32 个文本层，每四层是三层 linear attention 加一层 full attention；视觉塔为 27 层。模型卡称从 Qwen3.5-9B 全量微调语言模型、视觉编码器冻结，输入可含文本和图像。[模型卡](https://huggingface.co/baselabs/elephant-1/blob/b3f8a93462fb1051a9de031e94a7ff380e254072/README.md) |
 | 注意力 | `modeling_overrides.attention` 指定 full attention 为 `block_bidirectional`，linear attention 为 `causal`。不能把模型当成全因果 Qwen3.5，也不能让 Gated DeltaNet 层双向化。[配置](https://huggingface.co/baselabs/elephant-1/blob/b3f8a93462fb1051a9de031e94a7ff380e254072/config.json)、[作者技术报告 §2.3](https://labs.baseten.co/articles/mammoth-1-and-elephant-1-frontier-decision-models) |
 | 读出 | [`readout.json`](https://huggingface.co/baselabs/elephant-1/blob/b3f8a93462fb1051a9de031e94a7ff380e254072/readout.json) 是 `slot_lm`，`n_slots=256`，`head_dim=256`。这里 `head_dim` 是兼容读出配置字段；本检查点没有 `readout_head.pt`，不使用训练出的 pointer/head 读出。答案来自 LM head 的字母槽位 logits，而非生成文本或额外分类头。[补丁 readout.py](https://huggingface.co/baselabs/elephant-1/blob/b3f8a93462fb1051a9de031e94a7ff380e254072/serve.patch) |
-| 权重 | 固定仓库 15 文件，主权重 `model.safetensors` 18,819,722,392 字节，HF LFS SHA-256 `682f02348dfe4617dd21bba2915c12e805de8cf16327a61e895a831ea681d0ba`。[仓库清单](https://huggingface.co/baselabs/elephant-1/tree/b3f8a93462fb1051a9de031e94a7ff380e254072) 本机未完成权重的 safetensors 头部可解析出 760 个 BF16 tensor（语言 426、视觉 333、LM head 1），但尚未核完整文件哈希。 |
+| 权重 | 固定仓库 15 文件，主权重 `model.safetensors` 18,819,722,392 字节，HF LFS SHA-256 `682f02348dfe4617dd21bba2915c12e805de8cf16327a61e895a831ea681d0ba`。[仓库清单](https://huggingface.co/baselabs/elephant-1/tree/b3f8a93462fb1051a9de031e94a7ff380e254072) 本机完整 SHA-256 已核验；safetensors 包含 760 个 BF16 tensor（语言 426、视觉 333、LM head 1），427 个文本参数逐项与作者参考的已加载参数比较通过。 |
 | 校准 | 仓库没有 `calibration.json`；补丁只在本地文件存在时加载温度表，缺失时 OneJev 的 `Calibration.temperature` 回退到 1.0。这里的“校准概率”主要来自训练目标，不能自行补一个后处理温度。[补丁 engine.py](https://huggingface.co/baselabs/elephant-1/blob/b3f8a93462fb1051a9de031e94a7ff380e254072/serve.patch)、[OneJev 校准实现](https://github.com/OmniJev/OneJev/blob/81ce62f1597c91e46767d4d02d6ac2e18534fe94/qev/calibrate.py#L12-L40)、[作者技术报告 §2.6](https://labs.baseten.co/articles/mammoth-1-and-elephant-1-frontier-decision-models) |
 
 本机用仓库固定的 `tokenizer.json` 和 OneJev
@@ -119,7 +121,7 @@ assert engine.info.extra["readout"] == "slot_lm"
 assert engine.info.extra["calibration"] == "none"
 ```
 
-这个入口是从公开代码推导的**待实测**参考方案；若完整多模态检查点无法被
+这个入口已在固定快照、Transformers 5.19.0 和作者补丁下实测通过；若其他检查点无法被
 `Qwen3_5ForCausalLM` 正确装入，或出现未加载权重警告，应停止生成 goldens，
 先修复/确认作者文本加载路径。不要通过忽略权重缺失、切换成因果注意力或直接用
 `transformers.pipeline("text-classification")` 绕过。`fork_mode="sequential"`
@@ -137,4 +139,5 @@ assert engine.info.extra["calibration"] == "none"
 以上检查项由[作者补丁](https://huggingface.co/baselabs/elephant-1/blob/b3f8a93462fb1051a9de031e94a7ff380e254072/serve.patch)、
 [OneJev 文本引擎](https://github.com/OmniJev/OneJev/blob/81ce62f1597c91e46767d4d02d6ac2e18534fe94/qev/engine.py)、
 [OneJev 多模态引擎](https://github.com/OmniJev/OneJev/blob/81ce62f1597c91e46767d4d02d6ac2e18534fe94/qev/mm_engine.py)
-的计算路径推导，不是本轮已通过的模型验收。
+的计算路径推导。当前完整文件与文本加载、顺序模式 goldens 和 CPU/CUDA
+基线已通过；批量 fork、图像真值及 4096 以上上下文不在本次验收范围。

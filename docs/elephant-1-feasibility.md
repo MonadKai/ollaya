@@ -20,9 +20,11 @@
 [仓库模型生命周期](model-lifecycle.md)、[Nimble 9B](families/nimble.md)、
 [Decider Vision](families/decider-vision.md)、[runner 接口](../crates/ollaya-runner/src/engine.rs)。
 
-目前只能判定**结构上可行，尚不能宣布模型推理已经可用**。完整权重仍在本机
-`/opt/huggingface/hub` 下载；作者固定环境的真实加载、输出 goldens、ONNX 导出、
-32 GB GPU 显存与长序列门禁均未运行。作者模型卡宣称 16,384 token 训练上限，
+后续实现已经证明**文本推理可用**：完整权重 SHA-256、427 个文本参数加载、
+作者参考 goldens、ONNX CPU/CUDA 与原生 daemon API 均通过验证，见
+[实际验收](families/elephant.md#full-weight-evidence-y108p62-2026-11-06)。
+当前开发 tag 限制为 4096 token；没有进行正式质量/性能发布基准。
+作者模型卡宣称 16,384 token 训练上限，
 不能把底模 `max_position_embeddings=262144` 当成已验证可用窗口。
 [模型卡](https://huggingface.co/baselabs/elephant-1/blob/b3f8a93462fb1051a9de031e94a7ff380e254072/README.md)、
 [模型配置](https://huggingface.co/baselabs/elephant-1/blob/b3f8a93462fb1051a9de031e94a7ff380e254072/config.json)。
@@ -149,4 +151,5 @@ graph SHA 和 parity；不能把导出的 2.1 MB 行另行当作可再发布权�
 
 **需要明确的首个试验结果**：作者指定环境在本地固定快照上能否以
 `noncausal` + `slot_lm` 完整加载、并输出可复现的文本 raw logits。
-这项结果决定后续导出与 parity 有无可信真值；当前是待验证项。
+这项检查现已通过：固定作者参考成功加载全部文本参数，完整模型输出已成为
+12 行 CPU/CUDA parity 的真值；图像和更长上下文仍另行验收。

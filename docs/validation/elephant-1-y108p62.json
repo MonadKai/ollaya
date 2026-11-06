@@ -1,0 +1,165 @@
+{
+  "scope": "fork-only text development validation; not public quality/performance/release qualification",
+  "utc": "2026-11-06T08:17:48.468939+00:00",
+  "branch": "feat/elephant-1",
+  "model": "baselabs/elephant-1",
+  "revision": "b3f8a93462fb1051a9de031e94a7ff380e254072",
+  "onejev": "81ce62f1597c91e46767d4d02d6ac2e18534fe94",
+  "weight_bytes": 18819722392,
+  "weight_sha256": "682f02348dfe4617dd21bba2915c12e805de8cf16327a61e895a831ea681d0ba",
+  "graph_sha256": "caa65023244b52ebe63fe60d7ea1466d29de0931643dd5798290345ab68da6eb",
+  "goldens_sha256": "0a74622eee78c5db3414f82e4e322a27ab2bacd552b2579451147811b0ed8289",
+  "private_manifest_sha256": "8c8b1aab5340b812d8f099a827833eb0a5a30823a4d990da6ce14945b9a17e35",
+  "loaded_text_parameters_compared": 427,
+  "unused_vision_tensors": 333,
+  "requests": 9,
+  "rows": 12,
+  "tested_prompt_tokens": [
+    512,
+    2048,
+    4096
+  ],
+  "limits": {
+    "prompt_tokens": 4096,
+    "request_tokens_shared_prefix_once": 16384,
+    "images": false
+  },
+  "gate": {
+    "max_logit_error": 0.001,
+    "max_probability_error": 0.0001,
+    "identical_decisions": true,
+    "identical_token_ids_and_prefix_boundaries": true
+  },
+  "export_eager_author_max_logit_error": 4.76837158203125e-06,
+  "parity": {
+    "cpu": {
+      "family": "elephant",
+      "rows": 12,
+      "model_checked": true,
+      "threads": 8,
+      "max_logit_error": 1.1920928955078125e-05,
+      "max_probability_error": 5.263880499123408e-07
+    },
+    "cuda": {
+      "family": "elephant",
+      "rows": 12,
+      "model_checked": true,
+      "threads": 8,
+      "max_logit_error": 1.52587890625e-05,
+      "max_probability_error": 1.1922098309691265e-06
+    }
+  },
+  "runner_http": {
+    "reference": "author Elephant-1",
+    "device": "cuda:0",
+    "rows": 12,
+    "max_logit_error": 1.52587890625e-05,
+    "rejections": 4,
+    "passed": true
+  },
+  "daemon": {
+    "model": "elephant:1-text",
+    "golden_rows": 12,
+    "wire_rows_checked": 13,
+    "max_wire_rounding_error": 4.967115313020236e-05,
+    "rejections": [
+      422,
+      422,
+      422,
+      422
+    ],
+    "author_only_schema_rejections": 1,
+    "passed": true
+  },
+  "runtime": {
+    "source_commit": "36b202041e81d2d12d942668f545d5118a11410d",
+    "binary": "/opt/kai.liu/var/ollaya-elephant/runtime/bin/ollaya",
+    "binary_sha256": "01f1a76b7dc7aba47e80af9f672af9303576c7f59c7ff8f2118acc112143b1d1",
+    "ort": "1.28.2 CUDA13",
+    "nvidia_native_files": 47,
+    "python_runtime_required": false
+  },
+  "environment": {
+    "gpu": "RTX 5090 32GB",
+    "physical_gpu": 4,
+    "logical_device": "cuda:0",
+    "threads": 8,
+    "torch": "2.14.0+cu130",
+    "transformers_reference": "5.19.0",
+    "onnxruntime": "1.28.2 CUDA13"
+  },
+  "not_validated": [
+    "images",
+    "prompts above 4096 tokens",
+    "shared-prefix cache optimization",
+    "formal quality and speed benchmark suites",
+    "Windows and non-CUDA GPU backends"
+  ],
+  "logs": {
+    "export.log": {
+      "path": "/opt/kai.liu/var/ollaya-elephant/export.log",
+      "sha256": "e36a79a11bcbd25b62b1c3c5b65c08c7effd184e3258ed19d36b66218d7e11d6"
+    },
+    "goldens.log": {
+      "path": "/opt/kai.liu/var/ollaya-elephant/goldens.log",
+      "sha256": "85d75cb17a3929ff3919d381f3561e7d5124ff76feb554e26d44abf629aca01e"
+    },
+    "parity-cpu.log": {
+      "path": "/opt/kai.liu/var/ollaya-elephant/parity-cpu.log",
+      "sha256": "f22674274be8c85f9a6cdb60dd486e65b515c56696e5669662b6a05219a7f0cd"
+    },
+    "parity-cuda.log": {
+      "path": "/opt/kai.liu/var/ollaya-elephant/parity-cuda.log",
+      "sha256": "0d53c7a28a6abaecfd2609e296a18f263b947f7e4ed201a241ea6d8aa5e5d09b"
+    },
+    "http-cuda.log": {
+      "path": "/opt/kai.liu/var/ollaya-elephant/http-cuda.log",
+      "sha256": "39b8113ed1b4bd07cae811583aff8bb4e893b1f0fe3a169db23e77af4cdcfbf1"
+    },
+    "daemon-result.json": {
+      "path": "/opt/kai.liu/var/ollaya-elephant/daemon-result.json",
+      "sha256": "b246c54ded683a2b365b813e6940f48f0fb0b8b2e8153071f8a2784095d9c40f"
+    },
+    "native-runtime-proof.json": {
+      "path": "/opt/kai.liu/var/ollaya-elephant/native-runtime-proof.json",
+      "sha256": "9ff8c934679977051c9a890e547a093180289364058b860b48d6e3d9ad32e657"
+    }
+  },
+  "native_serving": {
+    "registry_stopped_before_api_checks": true,
+    "python_or_torch_loaded": false,
+    "loaded_shared_library_count": 24,
+    "api_ps_context_length": 4096
+  },
+  "engine_source_commit": "36b202041e81d2d12d942668f545d5118a11410d",
+  "checks": {
+    "cargo_fmt": "passed",
+    "cargo_clippy_workspace_all_targets_locked_cuda_dynamic_D_warnings": "passed",
+    "cargo_test_workspace_locked_cuda_dynamic": "passed",
+    "python_unittest_discover_convert_tests": {
+      "passed": true,
+      "tests": 38
+    },
+    "cli_sample": {
+      "noul": 0.9972,
+      "input_tokens": 114,
+      "passed": true
+    }
+  },
+  "closeout": {
+    "utc": "2026-11-06T08:18:54.831259+00:00",
+    "task_ports_listening": {
+      "11439": false,
+      "18899": false
+    },
+    "download_unit_active": "inactive",
+    "download_unit_enabled": "disabled",
+    "gpu": "0, NVIDIA GeForce RTX 5090, 17215 MiB\n1, NVIDIA GeForce RTX 5090, 17213 MiB\n2, NVIDIA GeForce RTX 5090, 16479 MiB\n3, NVIDIA GeForce RTX 5090, 9305 MiB\n4, NVIDIA GeForce RTX 5090, 2 MiB\n5, NVIDIA GeForce RTX 5090, 2 MiB\n6, NVIDIA GeForce RTX 5090, 2 MiB\n7, NVIDIA GeForce RTX 5090, 2 MiB\n",
+    "private_model_cache_preserved": true,
+    "download_unit_previous_state": "failed"
+  },
+  "cleanup": {
+    "redundant_download_bytes_removed": 13628639153,
+    "verified_weight_preserved": true
+  }
+}
