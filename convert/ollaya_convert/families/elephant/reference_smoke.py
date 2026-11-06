@@ -5,6 +5,7 @@ This tests reference mechanics independently of the 18.82 GB checkpoint.
 """
 import argparse
 import json
+import math
 from pathlib import Path
 
 import torch
@@ -43,7 +44,9 @@ def check(snapshot, requests_path=None):
             ids=prefix+suffix;t=(len(ids)+63)//64*64
             x=torch.zeros((1,t),dtype=torch.long);x[0,:len(ids)]=torch.tensor(ids)
             with torch.inference_mode(): got=graph(x,torch.tensor([len(ids)-1]),torch.tensor([len(prefix)]))[0,:len(values)]
-            maximum=max(maximum,float((got-torch.tensor(values)).abs().max()));count+=1
+            error=float((got-torch.tensor(values)).abs().max())
+            if not math.isfinite(error): raise ValueError("non-finite author or graph logits")
+            maximum=max(maximum,error);count+=1
     record={"reference":"pinned author sequential fork on random tiny model","rows":count,"max_logit_error":maximum}
     print(json.dumps(record),flush=True)
     if maximum>1e-5: raise ValueError("author cached fork differs from full-sequence graph")

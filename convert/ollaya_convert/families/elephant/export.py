@@ -6,6 +6,7 @@ ELEPHANT_ONEJEV=/path/to/pinned/patched/OneJev python -m ollaya_convert.families
 import argparse
 import gc
 import json
+import math
 import os
 import shutil
 
@@ -60,9 +61,11 @@ def export(model_dir, out_dir, fp16=False, max_tokens=4096):
     for i,r in enumerate(rows): ids[i,:len(r["ids"])] = torch.tensor(r["ids"])
     args = (ids,torch.tensor([len(r["ids"])-1 for r in rows]),torch.tensor([len(prefix)]*2))
     with torch.inference_mode(): got = graph(*args)
+    if not torch.isfinite(got).all() or any(not math.isfinite(x) for row in want for x in row):
+        raise ValueError("non-finite author or eager graph logits")
     err = max(float((got[i,:len(w)]-torch.tensor(w)).abs().max()) for i,w in enumerate(want))
     print("fp32 eager vs author sequential raw logits:",err,flush=True)
-    if err > 1e-3: raise ValueError("eager graph failed author parity")
+    if not math.isfinite(err) or err > 1e-3: raise ValueError("eager graph failed author parity")
     if fp16: half_trunk(graph.trunk)
     r = torch.export.Dim("rows",min=1,max=4096)
     n = torch.export.Dim("chunks",min=1,max=256)

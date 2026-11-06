@@ -8,6 +8,8 @@ import types
 from unittest.mock import patch
 
 from ollaya_convert.families.elephant import package_local, ref
+from ollaya_convert.families.elephant.checks import load_goldens
+from ollaya_convert.families.elephant import daemon_smoke, http_smoke
 
 
 class ElephantPackagingTests(unittest.TestCase):
@@ -53,6 +55,75 @@ class ElephantReferenceIdentityTests(unittest.TestCase):
             with patch.dict(ref.REFERENCE_SHA256, {}, clear=True), patch.dict(ref.sys.modules, {"qev": module}):
                 with self.assertRaisesRegex(ValueError, "another tree"):
                     ref.verify_reference(tmp)
+
+
+class ElephantGoldenAdmissionTests(unittest.TestCase):
+    def valid(self):
+        return {"cases": [{"state": "test", "questions": {"q": {"type": "noul"}},
+                           "rows": [{"qid": "q", "ids": [1, 2], "prefix_length": 1, "options": 2, "noul": True}],
+                           "logits": [[0.0, 1.0]]}]}
+
+    def test_complete_goldens_are_admitted(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "goldens.json"
+            path.write_text(json.dumps(self.valid()))
+            self.assertEqual(load_goldens(path), self.valid())
+
+    def test_corrupt_or_empty_goldens_fail_before_runtime_work(self):
+        corrupt = [{"cases": []}, {"cases": [None]}]
+        for field, value in [("logits", []), ("rows", []), ("questions", {}),
+                             ("logits", [[0.0]]), ("logits", [[float("nan"), 1.0]]),
+                             ("logits", [[float("inf"), 1.0]])]:
+            data = self.valid()
+            data["cases"][0][field] = value
+            corrupt.append(data)
+        data = self.valid()
+        data["cases"][0]["rows"][0]["qid"] = "another-question"
+        corrupt.append(data)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / "goldens.json"
+            for data in corrupt:
+                with self.subTest(data=data):
+                    path.write_text(json.dumps(data))
+                    with patch("urllib.request.urlopen") as network, patch("subprocess.Popen") as runner:
+                        with self.assertRaises(ValueError):
+                            daemon_smoke.check("http://127.0.0.1:1", "elephant:1-text", path, root / "result.json")
+                        with self.assertRaises(ValueError):
+                            http_smoke.check("/no/binary", root, path, "cpu")
+                        network.assert_not_called()
+                        runner.assert_not_called()
+                        self.assertFalse((root / "result.json").exists())
+
+    def test_failed_unload_cannot_publish_a_pass(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / "goldens.json"
+            path.write_text(json.dumps(self.valid()))
+            def response(request, timeout):
+                result = {"details": {"family": "elephant"}, "model_info": {"elephant.layout": "elephant-1-v1"},
+                          "capabilities": ["choice", "score", "noul"]}
+                if request.full_url.endswith("/api/decide"):
+                    body = json.loads(request.data)
+                    if "state" not in body:
+                        result = {"done_reason": "load"}  # unload must be acknowledged
+                    elif body["state"] == "test":
+                        result = {"state_truncated": False, "usage": {"input_tokens": 2},
+                                  "answers": {"q": {"type": "noul", "noul": 0.7311}}}
+                    else:
+                        import io
+                        import urllib.error
+                        raise urllib.error.HTTPError(request.full_url, 422, "refused", {}, io.BytesIO(b'{"error":"refused"}'))
+                import io
+                from unittest.mock import MagicMock
+                value = MagicMock()
+                value.__enter__.return_value = io.StringIO(json.dumps(result))
+                value.__enter__.return_value.status = 200
+                return value
+            with patch("urllib.request.urlopen", side_effect=response):
+                with self.assertRaises(AssertionError):
+                    daemon_smoke.check("http://127.0.0.1:1", "elephant:1-text", path, root / "result.json")
+            self.assertFalse((root / "result.json").exists())
 
 
 if __name__ == "__main__":

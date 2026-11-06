@@ -1,15 +1,18 @@
 """Verify the isolated runner HTTP protocol against a supplied golden artifact."""
 import argparse
 import json
+import math
 from pathlib import Path
 import subprocess
 import urllib.request
 import urllib.error
 
+from .checks import load_goldens
+
 
 def check(binary, model, goldens, device):
     model=Path(model).resolve()
-    data=json.loads(Path(goldens).read_text())
+    data=load_goldens(goldens)
     log=model/"http-runner.log"
     with log.open("a") as stderr:
         proc=subprocess.Popen([str(Path(binary).resolve()),"runner","--graph-fp32",str(model/"model.onnx"),
@@ -32,6 +35,7 @@ def check(binary, model, goldens, device):
                 assert len(result["questions"])==len(case["logits"])
                 for row,want in zip(result["questions"],case["logits"]):
                     assert len(row["logits"])==len(want)
+                    assert all(math.isfinite(value) for value in row["logits"]), row
                     maximum=max(maximum,max(abs(a-b) for a,b in zip(row["logits"],want)))
                     count+=1
                 assert not result["state_truncated"]
@@ -50,12 +54,12 @@ def check(binary, model, goldens, device):
                 assert "error" in result,result
             record={"reference":data.get("reference","author Elephant-1"),"device":loaded["device"],
                     "rows":count,"max_logit_error":maximum,"rejections":4,"passed":True}
-            (model/"http-result.json").write_text(json.dumps(record,indent=2)+"\n")
-            print(json.dumps(record),flush=True)
         finally:
             proc.terminate()
             try: proc.wait(timeout=20)
             except subprocess.TimeoutExpired: proc.kill();proc.wait()
+    (model/"http-result.json").write_text(json.dumps(record,indent=2)+"\n")
+    print(json.dumps(record),flush=True)
 
 
 if __name__=="__main__":

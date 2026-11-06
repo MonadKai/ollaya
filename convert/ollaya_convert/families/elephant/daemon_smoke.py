@@ -12,6 +12,7 @@ import urllib.error
 import urllib.request
 
 from .layout import suffix
+from .checks import load_goldens
 
 
 DEFAULTS = {
@@ -34,7 +35,7 @@ def check(base, model, goldens, out):
         except urllib.error.HTTPError as error:
             return error.code, json.load(error)
 
-    data = json.loads(Path(goldens).read_text())
+    data = load_goldens(goldens)
     maximum = 0.0
     rows = 0
     rejections = []
@@ -119,11 +120,11 @@ def check(base, model, goldens, out):
         record = {"model": model, "golden_rows": sum(len(c["rows"]) for c in data["cases"]),
                   "wire_rows_checked": rows, "max_wire_rounding_error": maximum,
                   "rejections": rejections, "author_only_schema_rejections": schema_rejections, "passed": True}
-        Path(out).write_text(json.dumps(record, indent=2) + "\n")
-        print(json.dumps(record), flush=True)
     finally:
         status, result = call("/api/decide", {"model": model, "keep_alive": 0})
         assert status == 200 and result["done_reason"] == "unload", (status, result)
+    Path(out).write_text(json.dumps(record, indent=2) + "\n")
+    print(json.dumps(record), flush=True)
 
 
 if __name__ == "__main__":
