@@ -16,6 +16,7 @@ from .layout import SLOTS
 
 
 def check(snapshot, requests_path=None):
+    ref.verify_snapshot(snapshot)
     torch.set_num_threads(4);torch.manual_seed(42)
     cls,_,_=ref.upstream()
     from qev import readout

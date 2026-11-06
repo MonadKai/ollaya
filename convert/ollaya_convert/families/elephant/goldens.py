@@ -43,6 +43,7 @@ def generate(model_dir, output, layout_only=False, device="cpu", dtype="float32"
         raise ValueError("max_tokens must be within 1..16384")
     cls, render, schema = ref.upstream()
     if layout_only:
+        ref.verify_snapshot(model_dir)
         from transformers import AutoTokenizer
         from qev import readout
         engine = cls.__new__(cls)

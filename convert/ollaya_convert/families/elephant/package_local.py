@@ -21,6 +21,8 @@ def build(model_dir, registry, origin):
     decision=json.loads((model_dir/"decision.json").read_text())
     if (decision.get("engine"),decision.get("layout"))!=("onnx","elephant-1-v1"):
         raise ValueError("expected an Elephant-1 ONNX export")
+    if decision.get("precision") != "fp32":
+        raise ValueError("elephant:1-text requires fp32 computation; reduced precision needs its own tag and gate")
     source=decision.get("upstream",{})
     if (source.get("repo"),source.get("revision"))!=(ref.REPO,ref.REVISION):
         raise ValueError("artifact does not name the pinned author checkpoint")

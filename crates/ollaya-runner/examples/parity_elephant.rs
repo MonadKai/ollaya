@@ -17,7 +17,7 @@ impl TokenEncoder for Tok {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
-    if args.len() < 3 {
+    if args.len() < 3 || args.len() > 4 {
         return Err("usage: parity_elephant MODEL_DIR GOLDENS [cpu|cuda], or --layout-only TOKENIZER GOLDENS".into());
     }
     let layout_only = args[1] == "--layout-only";
@@ -40,10 +40,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("OLLAYA_THREADS must be positive".into());
     }
     let model = if !layout_only {
-        let device = if args.get(3).is_some_and(|s| s == "cuda") {
-            Device::Cuda(0)
-        } else {
-            Device::Cpu
+        let device = match args.get(3).map(String::as_str).unwrap_or("cpu") {
+            "cuda" => Device::Cuda(0),
+            "cpu" => Device::Cpu,
+            _ => return Err("device must be cpu or cuda".into()),
         };
         Some(ElephantModel::load(Path::new(&args[1]), device, threads)?)
     } else {
@@ -52,14 +52,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rows_checked = 0;
     let mut max_error = 0.0_f64;
     let mut max_probability_error = 0.0_f64;
-    for case in data["cases"].as_array().ok_or("no cases")? {
+    let cases = data["cases"]
+        .as_array()
+        .filter(|c| !c.is_empty())
+        .ok_or("no cases")?;
+    for case in cases {
         let defs: Vec<_> = case["questions"]
             .as_object()
             .ok_or("no questions")?
             .iter()
             .map(|(k, v)| (k.as_str(), v))
             .collect();
-        let rows = layout.rows(&tok, &case["state"], &defs)?;
+        // Exercise the decision.json and tokenizer that will actually serve the
+        // model. A fixture's self-consistent template cannot certify an export.
+        let rows = match &model {
+            Some(m) => m.rows(&case["state"], &defs)?,
+            None => layout.rows(&tok, &case["state"], &defs)?,
+        };
         assert_eq!(rows.len(), case["rows"].as_array().ok_or("no rows")?.len());
         for (row, want) in rows.iter().zip(case["rows"].as_array().ok_or("no rows")?) {
             assert_eq!(

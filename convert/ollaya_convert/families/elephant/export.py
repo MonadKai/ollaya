@@ -33,8 +33,6 @@ def rename(name):
 def export(model_dir, out_dir, fp16=False, max_tokens=4096):
     if not 1 <= max_tokens <= 16384:
         raise ValueError("max_tokens must be within training limit 16384")
-    if ox.sha256_file(os.path.join(model_dir, "model.safetensors")) != ref.WEIGHT_SHA256:
-        raise ValueError("model.safetensors does not match pinned author SHA256")
     engine = ref.load(model_dir)
     tok = engine.tokenizer
     marker = "OLLAYA_ELEPHANT_CONTENT_MARKER"
