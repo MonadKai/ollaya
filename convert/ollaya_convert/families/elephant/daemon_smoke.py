@@ -22,24 +22,38 @@ DEFAULTS = {
 }
 
 
-def check(base, model, goldens, out):
+def check(base, model, goldens, out, leave_loaded=False, evidence=None, keep_alive="5m", expected_version=None):
+    trace = None if evidence is None else Path(evidence)
+    if trace is not None:
+        trace.mkdir(parents=True, exist_ok=False)
+    transaction = 0
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
     def call(path, body=None):
+        nonlocal transaction
+        transaction += 1
         req = urllib.request.Request(
             base.rstrip("/") + path,
             data=None if body is None else json.dumps(body).encode(),
             headers={"Content-Type": "application/json"},
         )
         try:
-            with urllib.request.urlopen(req, timeout=600) as response:
-                return response.status, json.load(response)
+            with opener.open(req, timeout=600) as response:
+                status, raw = response.status, response.read()
         except urllib.error.HTTPError as error:
-            return error.code, json.load(error)
+            status, raw = error.code, error.read()
+        if trace is not None:
+            (trace / f"{transaction:03d}-request.json").write_text(json.dumps({"path": path, "body": body}, ensure_ascii=False, indent=2) + "\n")
+            (trace / f"{transaction:03d}-response.json").write_bytes(raw)
+            (trace / f"{transaction:03d}-status.json").write_text(json.dumps({"status": status}) + "\n")
+        return status, json.loads(raw)
 
     data = load_goldens(goldens)
     maximum = 0.0
     rows = 0
     rejections = []
     schema_rejections = 0
+    record = None
 
     def compare(answers, case):
         nonlocal maximum, rows
@@ -67,6 +81,9 @@ def check(base, model, goldens, out):
             rows += 1
 
     try:
+        if expected_version is not None:
+            status, version = call("/api/version")
+            assert status == 200 and version["version"] == expected_version, (status, version)
         status, show = call("/api/show", {"model": model})
         assert status == 200 and show["details"]["family"] == "elephant", show
         assert show["model_info"]["elephant.layout"] == "elephant-1-v1", show
@@ -97,7 +114,7 @@ def check(base, model, goldens, out):
             for key, question in questions.items():
                 assert suffix(question) == suffix(case["questions"][key]), key
             body = {"model": model, "state": case["state"], "questions": questions}
-            status, result = call("/api/decide", {**body, "stream": False, "keep_alive": "5m"})
+            status, result = call("/api/decide", {**body, "stream": False, "keep_alive": keep_alive})
             assert status == 200 and not result["state_truncated"], (status, result)
             expected = sum(len(row["ids"]) - row["prefix_length"] for row in case["rows"]) + case["rows"][0]["prefix_length"]
             assert result["usage"]["input_tokens"] == expected, result
@@ -114,15 +131,17 @@ def check(base, model, goldens, out):
             {"state": "word " * 20000, "questions": valid},
             {"state": "QEV_PREFIX_MARK", "questions": valid},
         ]:
-            status, result = call("/api/decide", {"model": model, "stream": False, "keep_alive": "5m", **body})
+            status, result = call("/api/decide", {"model": model, "stream": False, "keep_alive": keep_alive, **body})
             assert status == 422 and "error" in result, (status, result)
             rejections.append(status)
         record = {"model": model, "golden_rows": sum(len(c["rows"]) for c in data["cases"]),
                   "wire_rows_checked": rows, "max_wire_rounding_error": maximum,
-                  "rejections": rejections, "author_only_schema_rejections": schema_rejections, "passed": True}
+                  "rejections": rejections, "author_only_schema_rejections": schema_rejections,
+                  "model_left_loaded": leave_loaded, "expected_version": expected_version, "passed": True}
     finally:
-        status, result = call("/api/decide", {"model": model, "keep_alive": 0})
-        assert status == 200 and result["done_reason"] == "unload", (status, result)
+        if not leave_loaded or record is None:
+            status, result = call("/api/decide", {"model": model, "keep_alive": 0})
+            assert status == 200 and result["done_reason"] == "unload", (status, result)
     Path(out).write_text(json.dumps(record, indent=2) + "\n")
     print(json.dumps(record), flush=True)
 
@@ -133,5 +152,9 @@ if __name__ == "__main__":
     parser.add_argument("--model", default="elephant:1-text")
     parser.add_argument("--goldens", required=True)
     parser.add_argument("--out", required=True)
+    parser.add_argument("--leave-loaded", action="store_true", help="retain the verified model for separate residency observation")
+    parser.add_argument("--evidence", help="new directory for raw requests/responses/status codes")
+    parser.add_argument("--keep-alive", default="5m")
+    parser.add_argument("--expected-version")
     args = parser.parse_args()
-    check(args.base, args.model, args.goldens, args.out)
+    check(args.base, args.model, args.goldens, args.out, args.leave_loaded, args.evidence, args.keep_alive, args.expected_version)

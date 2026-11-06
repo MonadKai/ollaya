@@ -86,7 +86,7 @@ class ElephantGoldenAdmissionTests(unittest.TestCase):
             for data in corrupt:
                 with self.subTest(data=data):
                     path.write_text(json.dumps(data))
-                    with patch("urllib.request.urlopen") as network, patch("subprocess.Popen") as runner:
+                    with patch("urllib.request.OpenerDirector.open") as network, patch("subprocess.Popen") as runner:
                         with self.assertRaises(ValueError):
                             daemon_smoke.check("http://127.0.0.1:1", "elephant:1-text", path, root / "result.json")
                         with self.assertRaises(ValueError):
@@ -120,10 +120,46 @@ class ElephantGoldenAdmissionTests(unittest.TestCase):
                 value.__enter__.return_value = io.StringIO(json.dumps(result))
                 value.__enter__.return_value.status = 200
                 return value
-            with patch("urllib.request.urlopen", side_effect=response):
+            with patch("urllib.request.OpenerDirector.open", side_effect=response):
                 with self.assertRaises(AssertionError):
                     daemon_smoke.check("http://127.0.0.1:1", "elephant:1-text", path, root / "result.json")
             self.assertFalse((root / "result.json").exists())
+
+    def test_deployment_mode_records_transactions_and_leaves_model_loaded(self):
+        import io
+        import urllib.error
+        from unittest.mock import MagicMock
+        requests = []
+        def response(request, timeout):
+            body = None if request.data is None else json.loads(request.data)
+            requests.append((request.full_url, body))
+            if request.full_url.endswith("/api/version"):
+                result = {"version": "fork-r1"}
+            elif request.full_url.endswith("/api/show"):
+                result = {"details": {"family": "elephant"}, "model_info": {"elephant.layout": "elephant-1-v1"},
+                          "capabilities": ["choice", "score", "noul"]}
+            elif body.get("state") == "test":
+                self.assertEqual(body["keep_alive"], "30m")
+                result = {"state_truncated": False, "usage": {"input_tokens": 2},
+                          "answers": {"q": {"type": "noul", "noul": 0.7311}}}
+            else:
+                raise urllib.error.HTTPError(request.full_url, 422, "refused", {}, io.BytesIO(b'{"error":"refused"}'))
+            value = MagicMock()
+            value.__enter__.return_value = io.BytesIO(json.dumps(result).encode())
+            value.__enter__.return_value.status = 200
+            return value
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / "goldens.json"
+            path.write_text(json.dumps(self.valid()))
+            with patch("urllib.request.OpenerDirector.open", side_effect=response):
+                daemon_smoke.check("http://127.0.0.1:1", "elephant:1-text", path, root / "result.json",
+                                   True, root / "trace", "30m", "fork-r1")
+            self.assertTrue(json.loads((root / "result.json").read_text())["model_left_loaded"])
+            self.assertFalse(any(body is not None and body.get("keep_alive") == 0 for _, body in requests))
+            self.assertEqual(len(list((root / "trace").glob("*-request.json"))), len(requests))
+            self.assertEqual(len(list((root / "trace").glob("*-response.json"))), len(requests))
+            self.assertEqual(len(list((root / "trace").glob("*-status.json"))), len(requests))
 
 
 if __name__ == "__main__":
