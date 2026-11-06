@@ -23,6 +23,9 @@ DEFAULTS = {
 
 
 def check(base, model, goldens, out, leave_loaded=False, evidence=None, keep_alive="5m", expected_version=None):
+    receipt = Path(out)
+    if receipt.exists() or not receipt.parent.is_dir():
+        raise ValueError("output must be a new file in an existing directory")
     trace = None if evidence is None else Path(evidence)
     if trace is not None:
         trace.mkdir(parents=True, exist_ok=False)
@@ -54,6 +57,8 @@ def check(base, model, goldens, out, leave_loaded=False, evidence=None, keep_ali
     rejections = []
     schema_rejections = 0
     record = None
+    completed = False
+    unloaded = False
 
     def compare(answers, case):
         nonlocal maximum, rows
@@ -138,11 +143,17 @@ def check(base, model, goldens, out, leave_loaded=False, evidence=None, keep_ali
                   "wire_rows_checked": rows, "max_wire_rounding_error": maximum,
                   "rejections": rejections, "author_only_schema_rejections": schema_rejections,
                   "model_left_loaded": leave_loaded, "expected_version": expected_version, "passed": True}
-    finally:
-        if not leave_loaded or record is None:
+        if not leave_loaded:
             status, result = call("/api/decide", {"model": model, "keep_alive": 0})
             assert status == 200 and result["done_reason"] == "unload", (status, result)
-    Path(out).write_text(json.dumps(record, indent=2) + "\n")
+            unloaded = True
+        with receipt.open("x") as stream:
+            stream.write(json.dumps(record, indent=2) + "\n")
+        completed = True
+    finally:
+        if not completed and not unloaded:
+            status, result = call("/api/decide", {"model": model, "keep_alive": 0})
+            assert status == 200 and result["done_reason"] == "unload", (status, result)
     print(json.dumps(record), flush=True)
 
 

@@ -4,7 +4,9 @@ Base Labs' [Elephant-1](https://huggingface.co/baselabs/elephant-1) is a Qwen3.5
 decision model. This fork adds the **text-only** `elephant-1-v1` ONNX layout.
 Full-weight CPU/CUDA parity and native daemon integration pass on y108p62.
 The implementation lives on `feat/elephant-1`, with a private `elephant:1-text`
-development tag. It has not been published to the public catalog or released.
+development tag. A scoped internal CUDA12 fork image and standalone verifier are
+now available through the [producer delivery contract](../deployment/elephant-cuda12.md).
+Public catalog and upstream release publication remain outside this fork delivery.
 
 The model and reference are pinned to HF revision
 `b3f8a93462fb1051a9de031e94a7ff380e254072` and OneJev

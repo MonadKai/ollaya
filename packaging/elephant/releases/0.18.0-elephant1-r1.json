@@ -1,0 +1,23 @@
+{
+  "build": {
+    "schema_version": "ollaya-elephant-build-v1",
+    "version": "0.18.0-elephant1-r1",
+    "native_source_commit": "8d2dfef7c3513e6477beb7b956f99175b93c8ac1",
+    "packaging_commit": "ba6eb554da062d4a3b8af190978ff2b176dd5d93",
+    "base_image": "registry.100credit.cn/xdynamic/x86_64/nvidia/ollaya@sha256:af5e33cf6989959a2bfcc19b4dad61d03048f83b1e8baedfcc43ea0f70909544",
+    "platform": "linux/amd64",
+    "layout": "elephant-1-v1",
+    "weights_bundled": false,
+    "python_runtime_required": false,
+    "daemon_and_gpu_runner_sha256": "ca1c0cbbf23ebf551b7bf5f038a49cb1a47a124bbd0081bb510db5641d92b8d3",
+    "parity_sha256": "ca72d61fb865135df064191d0edf0756c909dc79af3db7a066453c80742f7cc5",
+    "runtime": "Microsoft ORT 1.28.2 CUDA12; both native executables use cuda-dynamic",
+    "qualified_scope": "Elephant text CUDA, 4096 tokens; no general K2/K3 release qualification"
+  },
+  "verifier_archive": "0.18.0-elephant1-r1-verifier.tar.gz",
+  "verifier_sha256": "e7c3f0f5bd284662f2812799f221057927a5f6c506dda67eddb8250fa6daa2e6",
+  "verifier_bytes": 19928,
+  "image": "registry.100credit.cn/xdynamic/x86_64/nvidia/ollaya@sha256:db50ee717a8f409a5bdf7d5a655a3e96d5407272417f078a416eed9c8d568922",
+  "image_config": "sha256:b3f93d268459c627b1de287724203584399d52c9ce54cd15208ecbf763413668",
+  "tag": "0.18.0-elephant1-r1-cuda12"
+}

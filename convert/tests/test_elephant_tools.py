@@ -142,6 +142,8 @@ class ElephantGoldenAdmissionTests(unittest.TestCase):
                 self.assertEqual(body["keep_alive"], "30m")
                 result = {"state_truncated": False, "usage": {"input_tokens": 2},
                           "answers": {"q": {"type": "noul", "noul": 0.7311}}}
+            elif body.get("keep_alive") == 0:
+                result = {"done_reason": "unload"}
             else:
                 raise urllib.error.HTTPError(request.full_url, 422, "refused", {}, io.BytesIO(b'{"error":"refused"}'))
             value = MagicMock()
@@ -160,6 +162,17 @@ class ElephantGoldenAdmissionTests(unittest.TestCase):
             self.assertEqual(len(list((root / "trace").glob("*-request.json"))), len(requests))
             self.assertEqual(len(list((root / "trace").glob("*-response.json"))), len(requests))
             self.assertEqual(len(list((root / "trace").glob("*-status.json"))), len(requests))
+            original_open = Path.open
+            def fail_receipt(path, *args, **kwargs):
+                if path == root / "late.json" and args == ("x",):
+                    raise OSError("simulated late output failure")
+                return original_open(path, *args, **kwargs)
+            with patch("urllib.request.OpenerDirector.open", side_effect=response), patch.object(Path, "open", fail_receipt):
+                with self.assertRaisesRegex(OSError, "late output"):
+                    daemon_smoke.check("http://127.0.0.1:1", "elephant:1-text", path, root / "late.json",
+                                       True, None, "30m", "fork-r1")
+            self.assertEqual(requests[-1][1], {"model": "elephant:1-text", "keep_alive": 0})
+            self.assertFalse((root / "late.json").exists())
 
 
 if __name__ == "__main__":

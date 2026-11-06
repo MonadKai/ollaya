@@ -59,7 +59,17 @@ def prepare(out, binary, parity, goldens, version, source_commit):
     dockerfile = Path(__file__).with_name("Dockerfile").read_text().replace("@SOURCE@", source_commit).replace("@VERSION@", version)
     (out / "Dockerfile").write_text(dockerfile)
     # The verification package is deliberately outside the runtime image context.
-    bundle = out.parent / (out.name + "-verifier")
+    verifier = package_verifier(out.parent / (out.name + "-verifier"), goldens, version)
+    receipt = {"build": metadata, "context": str(out), **verifier}
+    (out.parent / (out.name + "-receipt.json")).write_text(json.dumps(receipt, indent=2) + "\n")
+    print(json.dumps(receipt), flush=True)
+
+
+def package_verifier(bundle, goldens, version):
+    reference = json.loads((ROOT / "docs/validation/elephant-1-review-20261106.json").read_text())
+    if sha(goldens) != reference["goldens_sha256"]:
+        raise ValueError("verifier goldens differ from the qualified author reference")
+    bundle = Path(bundle).resolve()
     bundle.mkdir(exist_ok=False)
     package = bundle / "elephant_verify"
     package.mkdir()
@@ -71,20 +81,25 @@ def prepare(out, binary, parity, goldens, version, source_commit):
     (bundle / "manifest.json").write_text(json.dumps({"schema_version": "ollaya-elephant-verifier-v1", "version": version,
         "files": manifest, "prompt_limit": 4096, "request_limit": 16384,
         "invocation": "python -m elephant_verify.daemon_smoke --goldens goldens.json --base URL --model MODEL --out NEWFILE --evidence NEWDIR --expected-version " + version}, indent=2) + "\n")
-    archive = out.parent / (out.name + "-verifier.tar.gz")
+    archive = bundle.parent / (bundle.name + ".tar.gz")
     with tarfile.open(archive, "w:gz") as tar:
         for path in sorted(bundle.rglob("*")):
             if path.is_file():
                 tar.add(path, arcname=str(path.relative_to(bundle)))
-    receipt = {"build": metadata, "context": str(out), "verifier_archive": str(archive),
-               "verifier_sha256": sha(archive), "verifier_bytes": archive.stat().st_size}
-    (out.parent / (out.name + "-receipt.json")).write_text(json.dumps(receipt, indent=2) + "\n")
-    print(json.dumps(receipt), flush=True)
+    return {"verifier_archive": str(archive), "verifier_sha256": sha(archive), "verifier_bytes": archive.stat().st_size}
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ("out", "binary", "parity", "goldens", "version", "source-commit"):
+    parser.add_argument("--verifier-only", action="store_true")
+    for name in ("out", "goldens", "version"):
         parser.add_argument("--" + name, required=True)
+    for name in ("binary", "parity", "source-commit"):
+        parser.add_argument("--" + name)
     args = parser.parse_args()
-    prepare(args.out, args.binary, args.parity, args.goldens, args.version, args.source_commit)
+    if args.verifier_only:
+        print(json.dumps(package_verifier(args.out, args.goldens, args.version)))
+    else:
+        if not args.binary or not args.parity or not args.source_commit:
+            parser.error("image preparation requires --binary, --parity and --source-commit")
+        prepare(args.out, args.binary, args.parity, args.goldens, args.version, args.source_commit)

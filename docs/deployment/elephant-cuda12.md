@@ -37,3 +37,19 @@ or model-weight rehosting is implied. Public schema requires at least two
 choice options and non-null score descriptions. Images and longer contexts
 are rejected. Performance, general K2/K3 release gates and production/business
 quality are outside this internal functional qualification.
+
+
+The internal image is pinned in
+[`packaging/elephant/releases/0.18.0-elephant1-r1.json`](../../packaging/elephant/releases/0.18.0-elephant1-r1.json),
+alongside the independently consumable verifier archive. Its native source and
+packaging identities are separate from the final verifier delivery commit.
+To rebuild only the verifier after a tool fix, use `prepare-image.py
+--verifier-only --goldens ... --version ... --out NEW_DIRECTORY`; the original
+author golden SHA remains fixed. Verify every archive member against its manifest.
+
+For Docker daemons that expose an OCI manifest as the local image ID, use
+`packaging/elephant/export-image-identity.py --image LOCAL_TAG --target XD_TAG
+--out NEW_DIRECTORY`. It reads the save stream and preserves only exact raw
+manifest/config metadata and a local-daemon handoff. The consumer publisher
+binds those bytes, the immutable local ID and ordered layers before publishing.
+It never changes a running service.
